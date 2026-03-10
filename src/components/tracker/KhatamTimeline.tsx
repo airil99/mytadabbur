@@ -26,7 +26,7 @@ export function KhatamTimeline() {
     },
   })
 
-  const { data: active } = useQuery({
+  const { data: _active } = useQuery({
     queryKey: ['khatam', 'active'],
     queryFn: async () => {
       const clerkToken = (await getToken()) ?? ''

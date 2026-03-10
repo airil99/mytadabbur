@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { BarChart3 } from 'lucide-react'
-import { EmptyState } from '#/components/shared/EmptyState'
+import { StatsOverview } from '#/components/stats/StatsOverview'
+import { MonthlyChart } from '#/components/stats/MonthlyChart'
+import { TopSurahChart } from '#/components/stats/TopSurahChart'
 
 export const Route = createFileRoute('/stats/')({
   component: StatsPage,
@@ -12,11 +13,15 @@ function StatsPage() {
       <h1 className="mb-6 text-2xl font-bold text-[var(--foreground)]">
         Statistik
       </h1>
-      <EmptyState
-        icon={<BarChart3 />}
-        title="Tiada data lagi"
-        description="Statistik dan analitik akan muncul selepas anda mula menulis catatan."
-      />
+
+      <div className="space-y-6">
+        <StatsOverview />
+
+        <div className="grid gap-6 md:grid-cols-2">
+          <MonthlyChart />
+          <TopSurahChart />
+        </div>
+      </div>
     </div>
   )
 }

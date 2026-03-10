@@ -1,6 +1,20 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { PenLine, CheckSquare, BookMarked, BarChart3 } from 'lucide-react'
+import { useAuth } from '@clerk/clerk-react'
+import { useQuery } from '@tanstack/react-query'
+import { useServerFn } from '@tanstack/react-start'
+import {
+  PenLine,
+  CheckSquare,
+  BookMarked,
+  BarChart3,
+  Flame,
+  Layers,
+  BookOpen,
+  Trophy,
+} from 'lucide-react'
 import { Bismillah } from '#/components/shared/Bismillah'
+import { getStatsOverview } from '#/server/functions/stats'
+import { getCurrentStreak } from '#/server/functions/streaks'
 
 export const Route = createFileRoute('/')({ component: DashboardPage })
 
@@ -32,6 +46,28 @@ const quickLinks = [
 ] as const
 
 function DashboardPage() {
+  const { getToken, isSignedIn } = useAuth()
+  const overviewFn = useServerFn(getStatsOverview)
+  const streakFn = useServerFn(getCurrentStreak)
+
+  const { data: overview } = useQuery({
+    queryKey: ['stats', 'overview'],
+    queryFn: async () => {
+      const clerkToken = (await getToken()) ?? ''
+      return overviewFn({ data: { clerkToken } })
+    },
+    enabled: !!isSignedIn,
+  })
+
+  const { data: streak } = useQuery({
+    queryKey: ['streaks', 'current'],
+    queryFn: async () => {
+      const clerkToken = (await getToken()) ?? ''
+      return streakFn({ data: { clerkToken } })
+    },
+    enabled: !!isSignedIn,
+  })
+
   return (
     <div>
       <div className="mb-8">
@@ -43,6 +79,57 @@ function DashboardPage() {
           Selamat datang ke MyTadabbur. Mulakan tadabbur hari ini.
         </p>
       </div>
+
+      {/* Quick stats (only when signed in) */}
+      {isSignedIn && overview && (
+        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--card)] p-3">
+            <Flame className="size-5 text-orange-500" />
+            <div>
+              <p className="text-lg font-bold text-[var(--foreground)]">
+                {streak?.streak ?? 0}
+              </p>
+              <p className="text-[10px] text-[var(--muted-foreground)]">
+                Hari berturut
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--card)] p-3">
+            <PenLine className="size-5 text-blue-500" />
+            <div>
+              <p className="text-lg font-bold text-[var(--foreground)]">
+                {overview.journalEntries}
+              </p>
+              <p className="text-[10px] text-[var(--muted-foreground)]">
+                Catatan
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--card)] p-3">
+            <Layers className="size-5 text-emerald-500" />
+            <div>
+              <p className="text-lg font-bold text-[var(--foreground)]">
+                {overview.juzCompleted}
+                <span className="text-xs font-normal text-[var(--muted-foreground)]">
+                  /30
+                </span>
+              </p>
+              <p className="text-[10px] text-[var(--muted-foreground)]">Juz</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--card)] p-3">
+            <Trophy className="size-5 text-amber-500" />
+            <div>
+              <p className="text-lg font-bold text-[var(--foreground)]">
+                {overview.khatamCompleted}
+              </p>
+              <p className="text-[10px] text-[var(--muted-foreground)]">
+                Khatam
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2">
         {quickLinks.map((item) => (
