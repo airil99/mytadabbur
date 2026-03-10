@@ -4,13 +4,15 @@ import { useServerFn } from '@tanstack/react-start'
 import { PenLine, Layers, BookOpen, Trophy, FileText } from 'lucide-react'
 import { getStatsOverview } from '#/server/functions/stats'
 
-const cards = [
+type StatsKey = 'journalEntries' | 'juzCompleted' | 'surahCompleted' | 'khatamCompleted' | 'totalPagesRead'
+
+const cards: { key: StatsKey; label: string; icon: typeof PenLine; suffix?: string; color: string }[] = [
   { key: 'journalEntries', label: 'Catatan', icon: PenLine, color: 'text-blue-600 bg-blue-100 dark:text-blue-400 dark:bg-blue-950' },
   { key: 'juzCompleted', label: 'Juz Selesai', icon: Layers, suffix: '/ 30', color: 'text-emerald-600 bg-emerald-100 dark:text-emerald-400 dark:bg-emerald-950' },
   { key: 'surahCompleted', label: 'Surah Selesai', icon: BookOpen, suffix: '/ 114', color: 'text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-purple-950' },
   { key: 'khatamCompleted', label: 'Khatam', icon: Trophy, color: 'text-amber-600 bg-amber-100 dark:text-amber-400 dark:bg-amber-950' },
   { key: 'totalPagesRead', label: 'Halaman Dibaca', icon: FileText, color: 'text-rose-600 bg-rose-100 dark:text-rose-400 dark:bg-rose-950' },
-] as const satisfies readonly { key: string; label: string; icon: any; suffix?: string; color: string }[]
+]
 
 export function StatsOverview() {
   const { getToken } = useAuth()
