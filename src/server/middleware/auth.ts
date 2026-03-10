@@ -1,7 +1,4 @@
-import { createMiddleware } from '@tanstack/react-start'
-import { getWebRequest } from '@tanstack/react-start/server'
 import { createClerkClient } from '@clerk/backend'
-import { eq } from 'drizzle-orm'
 import { db } from '#/db/index'
 import { users } from '#/db/schema'
 
@@ -10,37 +7,32 @@ const clerk = createClerkClient({
 })
 
 /**
- * Auth middleware — verifies Clerk session and resolves the DB user.
- * Upserts user record on first sign-in.
- * Passes `userId` (DB uuid) in context.
+ * Resolves the authenticated DB user from a Clerk session token.
+ * Upserts user on first sign-in. Returns the DB user UUID.
+ *
+ * Usage: call from server function handlers that receive the token
+ * via the `clerkToken` field in the input data.
  */
-export const authMiddleware = createMiddleware().server(async ({ next }) => {
-  const request = getWebRequest()
-  const token = request.headers
-    .get('authorization')
-    ?.replace('Bearer ', '')
-
-  // Also check cookie-based sessions (Clerk sends __session cookie)
-  const cookieToken = request.headers.get('cookie')
-    ?.split(';')
-    .find((c) => c.trim().startsWith('__session='))
-    ?.split('=')[1]
-
-  const sessionToken = token || cookieToken
-
-  if (!sessionToken) {
+export async function requireAuth(token: string): Promise<string> {
+  if (!token) {
     throw new Error('Tidak dibenarkan — sila log masuk')
   }
 
-  let clerkUser: { id: string; firstName: string | null; lastName: string | null; emailAddresses: Array<{ emailAddress: string }>; imageUrl: string }
+  let clerkUser: {
+    id: string
+    firstName: string | null
+    lastName: string | null
+    emailAddresses: Array<{ emailAddress: string }>
+    imageUrl: string
+  }
+
   try {
-    const session = await clerk.verifyToken(sessionToken)
+    const session = await clerk.verifyToken(token)
     clerkUser = await clerk.users.getUser(session.sub)
   } catch {
     throw new Error('Sesi tidak sah — sila log masuk semula')
   }
 
-  // Upsert user in DB
   const name =
     [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ') ||
     'Pengguna'
@@ -56,9 +48,14 @@ export const authMiddleware = createMiddleware().server(async ({ next }) => {
     })
     .onConflictDoUpdate({
       target: users.clerkId,
-      set: { name, email, avatarUrl: clerkUser.imageUrl, updatedAt: new Date() },
+      set: {
+        name,
+        email,
+        avatarUrl: clerkUser.imageUrl,
+        updatedAt: new Date(),
+      },
     })
     .returning({ id: users.id })
 
-  return next({ context: { userId: dbUser!.id } })
-})
+  return dbUser!.id
+}

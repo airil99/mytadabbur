@@ -1,27 +1,30 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
-import { eq, and, desc, ilike, sql } from 'drizzle-orm'
+import { eq, and, desc, ilike } from 'drizzle-orm'
 import { db } from '#/db/index'
 import { journalEntries } from '#/db/schema'
-import { authMiddleware } from '../middleware/auth'
+import { requireAuth } from '../middleware/auth'
 import {
   createJournalEntrySchema,
   updateJournalEntrySchema,
 } from '#/lib/validators/journal'
 
-// ─── List entries (with optional filters) ────────────────
-const listFiltersSchema = z.object({
-  surahNumber: z.number().optional(),
-  mood: z.string().optional(),
-  search: z.string().optional(),
-  sort: z.enum(['newest', 'oldest', 'surah-asc', 'surah-desc']).optional(),
-})
+const tokenSchema = z.object({ clerkToken: z.string() })
 
+// ─── List entries (with optional filters) ────────────────
 export const listJournalEntries = createServerFn({ method: 'GET' })
-  .middleware([authMiddleware])
-  .validator(listFiltersSchema)
-  .handler(async ({ context, data }) => {
-    const { userId } = context
+  .validator(
+    tokenSchema.extend({
+      surahNumber: z.number().optional(),
+      mood: z.string().optional(),
+      search: z.string().optional(),
+      sort: z
+        .enum(['newest', 'oldest', 'surah-asc', 'surah-desc'])
+        .optional(),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const userId = await requireAuth(data.clerkToken)
     const { surahNumber, mood, search, sort = 'newest' } = data
 
     const conditions = [eq(journalEntries.userId, userId)]
@@ -49,27 +52,26 @@ export const listJournalEntries = createServerFn({ method: 'GET' })
       }
     })()
 
-    const entries = await db
+    return db
       .select()
       .from(journalEntries)
       .where(and(...conditions))
       .orderBy(orderBy)
-
-    return entries
   })
 
 // ─── Get single entry ────────────────────────────────────
 export const getJournalEntry = createServerFn({ method: 'GET' })
-  .middleware([authMiddleware])
-  .validator(z.object({ id: z.string().uuid() }))
-  .handler(async ({ context, data }) => {
+  .validator(tokenSchema.extend({ id: z.string().uuid() }))
+  .handler(async ({ data }) => {
+    const userId = await requireAuth(data.clerkToken)
+
     const [entry] = await db
       .select()
       .from(journalEntries)
       .where(
         and(
           eq(journalEntries.id, data.id),
-          eq(journalEntries.userId, context.userId),
+          eq(journalEntries.userId, userId),
         ),
       )
 
@@ -82,13 +84,14 @@ export const getJournalEntry = createServerFn({ method: 'GET' })
 
 // ─── Create entry ────────────────────────────────────────
 export const createJournalEntry = createServerFn({ method: 'POST' })
-  .middleware([authMiddleware])
-  .validator(createJournalEntrySchema)
-  .handler(async ({ context, data }) => {
+  .validator(tokenSchema.extend(createJournalEntrySchema.shape))
+  .handler(async ({ data }) => {
+    const userId = await requireAuth(data.clerkToken)
+
     const [entry] = await db
       .insert(journalEntries)
       .values({
-        userId: context.userId,
+        userId,
         surahNumber: data.surahNumber,
         surahName: data.surahName,
         ayahStart: data.ayahStart ?? null,
@@ -105,21 +108,22 @@ export const createJournalEntry = createServerFn({ method: 'POST' })
 
 // ─── Update entry ────────────────────────────────────────
 export const updateJournalEntry = createServerFn({ method: 'POST' })
-  .middleware([authMiddleware])
   .validator(
-    z.object({
+    tokenSchema.extend({
       id: z.string().uuid(),
       data: updateJournalEntrySchema,
     }),
   )
-  .handler(async ({ context, data }) => {
+  .handler(async ({ data }) => {
+    const userId = await requireAuth(data.clerkToken)
+
     const [entry] = await db
       .update(journalEntries)
       .set({ ...data.data, updatedAt: new Date() })
       .where(
         and(
           eq(journalEntries.id, data.id),
-          eq(journalEntries.userId, context.userId),
+          eq(journalEntries.userId, userId),
         ),
       )
       .returning()
@@ -133,15 +137,16 @@ export const updateJournalEntry = createServerFn({ method: 'POST' })
 
 // ─── Delete entry ────────────────────────────────────────
 export const deleteJournalEntry = createServerFn({ method: 'POST' })
-  .middleware([authMiddleware])
-  .validator(z.object({ id: z.string().uuid() }))
-  .handler(async ({ context, data }) => {
+  .validator(tokenSchema.extend({ id: z.string().uuid() }))
+  .handler(async ({ data }) => {
+    const userId = await requireAuth(data.clerkToken)
+
     const [deleted] = await db
       .delete(journalEntries)
       .where(
         and(
           eq(journalEntries.id, data.id),
-          eq(journalEntries.userId, context.userId),
+          eq(journalEntries.userId, userId),
         ),
       )
       .returning({ id: journalEntries.id })
