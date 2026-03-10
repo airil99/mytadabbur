@@ -1,5 +1,6 @@
 import {
   HeadContent,
+  Outlet,
   Scripts,
   createRootRouteWithContext,
 } from '@tanstack/react-router'
@@ -7,6 +8,7 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import Footer from '../components/Footer'
 import Header from '../components/Header'
+import { Sidebar } from '../components/layout/Sidebar'
 
 import ClerkProvider from '../integrations/clerk/provider'
 
@@ -35,7 +37,12 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'TanStack Start Starter',
+        title: 'MyTadabbur — Jurnal Al-Quran Harian',
+      },
+      {
+        name: 'description',
+        content:
+          'Aplikasi jurnal tadabbur Al-Quran untuk refleksi harian. Tulis catatan, jejak bacaan, dan khatam Al-Quran.',
       },
     ],
     links: [
@@ -45,12 +52,30 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       },
     ],
   }),
+  component: RootLayout,
   shellComponent: RootDocument,
 })
 
+function RootLayout() {
+  return (
+    <div className="flex min-h-screen flex-col">
+      <Header />
+      <div className="flex flex-1">
+        <Sidebar className="hidden md:flex" />
+        <main className="flex-1 overflow-y-auto">
+          <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
+            <Outlet />
+          </div>
+        </main>
+      </div>
+      <Footer />
+    </div>
+  )
+}
+
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="ms" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <HeadContent />
@@ -58,9 +83,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body className="font-sans antialiased [overflow-wrap:anywhere] selection:bg-[rgba(79,184,178,0.24)]">
         <ClerkProvider>
           <TanStackQueryProvider>
-            <Header />
             {children}
-            <Footer />
             <TanStackDevtools
               config={{
                 position: 'bottom-right',
