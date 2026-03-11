@@ -1,198 +1,175 @@
-Welcome to your new TanStack Start app! 
+# MyTadabbur — Jurnal Al-Quran Harian
 
-# Getting Started
+Aplikasi web untuk mencatat refleksi tadabbur Al-Quran, menjejak bacaan, dan kekal istiqamah setiap hari.
 
-To run this application:
+## Ciri-ciri Utama
+
+- **Jurnal Tadabbur** — Tulis refleksi harian berdasarkan ayat Al-Quran
+- **Penjejak Bacaan** — Jejak progress Juz (30) dan Surah (114)
+- **Kitaran Khatam** — Rancang dan rekod khatam Al-Quran
+- **Streak Harian** — Rekod halaman dibaca dan minit dihabiskan setiap hari
+- **Statistik** — Ringkasan pencapaian, carta bulanan, dan surah paling kerap
+- **Al-Quran** — Baca 114 surah dengan teks Arab dan terjemahan Melayu (Basmeih)
+- **PWA** — Boleh dipasang sebagai aplikasi di telefon
+
+## Tech Stack
+
+| Komponen | Teknologi |
+|----------|-----------|
+| Framework | [TanStack Start](https://tanstack.com/start) (React, SSR) |
+| Styling | [Tailwind CSS v4](https://tailwindcss.com/) |
+| UI Components | [shadcn/ui](https://ui.shadcn.com/) |
+| Icons | [Lucide React](https://lucide.dev/) |
+| Database | PostgreSQL via [Drizzle ORM](https://orm.drizzle.team/) |
+| Auth | [Clerk](https://clerk.com/) |
+| State | [TanStack Query](https://tanstack.com/query) + TanStack Router |
+| Forms | [React Hook Form](https://react-hook-form.com/) + [Zod](https://zod.dev/) |
+| Quran API | [Al-Quran Cloud API](https://alquran.cloud/api) |
+
+## Prasyarat
+
+- [Node.js](https://nodejs.org/) v18 atau lebih baru
+- npm (disertakan bersama Node.js)
+- Akaun [Clerk](https://clerk.com/) (percuma)
+- Akaun [Neon](https://neon.tech/) untuk PostgreSQL (percuma)
+
+## Langkah Pemasangan
+
+### 1. Clone repositori
+
+```bash
+git clone https://github.com/<your-username>/mytadabbur.git
+cd mytadabbur
+```
+
+### 2. Install dependencies
 
 ```bash
 npm install
+```
+
+### 3. Sediakan pangkalan data (Neon PostgreSQL)
+
+1. Pergi ke [neon.tech](https://neon.tech/) dan daftar akaun percuma
+2. Cipta projek baru:
+   - **Database name:** `neondb` (atau pilihan anda)
+   - **Region:** Pilih region terdekat (cth. `ap-southeast-1` untuk Asia Tenggara)
+3. Salin **connection string** dari dashboard Neon (format: `postgresql://...`)
+
+### 4. Sediakan autentikasi (Clerk)
+
+1. Pergi ke [clerk.com](https://clerk.com/) dan daftar akaun percuma
+2. Cipta aplikasi baru dan pilih **TanStack Start** sebagai framework
+3. Dari halaman **API Keys**, salin:
+   - **Publishable Key** (bermula `pk_test_...`)
+   - **Secret Key** (bermula `sk_test_...`)
+
+### 5. Konfigurasi environment variables
+
+Cipta fail `.env.local` di root projek:
+
+```bash
+cp .env.local.example .env.local
+```
+
+Atau cipta secara manual dengan kandungan berikut:
+
+```env
+# Clerk configuration
+VITE_CLERK_PUBLISHABLE_KEY=pk_test_YOUR_PUBLISHABLE_KEY_HERE
+CLERK_SECRET_KEY=sk_test_YOUR_SECRET_KEY_HERE
+
+# Database URL for PostgreSQL (dari Neon dashboard)
+DATABASE_URL="postgresql://username:password@host/dbname?sslmode=verify-full"
+```
+
+Gantikan nilai-nilai di atas dengan kunci sebenar dari Clerk dan Neon.
+
+### 6. Push schema ke database
+
+```bash
+npx drizzle-kit push
+```
+
+Ini akan mencipta 5 jadual dalam database:
+- `users` — Maklumat pengguna
+- `journal_entries` — Catatan jurnal tadabbur
+- `reading_progress` — Progress bacaan Juz/Surah
+- `khatam_cycles` — Kitaran khatam Al-Quran
+- `daily_streaks` — Rekod streak harian
+
+### 7. Jalankan aplikasi
+
+```bash
 npm run dev
 ```
 
-# Building For Production
+Buka [http://localhost:3000](http://localhost:3000) di pelayar web.
 
-To build this application for production:
+## Skrip NPM
 
-```bash
-npm run build
+| Skrip | Keterangan |
+|-------|------------|
+| `npm run dev` | Jalankan dev server (port 3000) |
+| `npm run build` | Build untuk production |
+| `npm run preview` | Preview production build |
+| `npm run test` | Jalankan ujian |
+| `npm run db:generate` | Jana migration Drizzle |
+| `npm run db:push` | Push schema ke database |
+| `npm run db:studio` | Buka Drizzle Studio (GUI database) |
+
+## Struktur Projek
+
+```
+src/
+├── components/
+│   ├── journal/        # Komponen jurnal (form, list, card)
+│   ├── tracker/        # Komponen penjejak (grid, khatam, streak)
+│   ├── stats/          # Komponen statistik (carta, overview)
+│   ├── shared/         # Komponen dikongsi (Bismillah, EmptyState, dll.)
+│   ├── layout/         # Layout (MobileNav)
+│   └── ui/             # shadcn/ui components
+├── db/
+│   ├── schema.ts       # Drizzle schema (5 jadual)
+│   └── index.ts        # Database connection
+├── lib/
+│   ├── quran/          # Data surah statik + API fetch
+│   ├── validators/     # Zod schemas
+│   └── utils.ts        # Utility functions (cn)
+├── routes/
+│   ├── __root.tsx      # Root layout
+│   ├── index.tsx       # Landing / Dashboard
+│   ├── journal/        # /journal, /journal/new, /journal/$entryId
+│   ├── tracker/        # /tracker, /tracker/khatam
+│   ├── quran/          # /quran, /quran/$surahNumber
+│   ├── stats/          # /stats
+│   └── settings/       # /settings
+├── server/
+│   ├── functions/      # Server functions (journal, tracker, khatam, streaks, stats)
+│   └── middleware/     # Auth middleware (Clerk token verification)
+├── integrations/
+│   ├── clerk/          # Clerk provider + header
+│   └── tanstack-query/ # TanStack Query provider
+└── styles.css          # Global CSS + theme variables
 ```
 
-## Testing
+## Deployment
 
-This project uses [Vitest](https://vitest.dev/) for testing. You can run the tests with:
+Aplikasi ini direka untuk deployment di [Vercel](https://vercel.com/):
 
-```bash
-npm run test
-```
+1. Push kod ke GitHub
+2. Import repositori di Vercel
+3. Tambah environment variables (`VITE_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `DATABASE_URL`)
+4. Deploy
 
-## Styling
+## Environment Variables
 
-This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
+| Variable | Keterangan | Diperlukan |
+|----------|------------|------------|
+| `VITE_CLERK_PUBLISHABLE_KEY` | Clerk publishable key | Ya |
+| `CLERK_SECRET_KEY` | Clerk secret key | Ya |
+| `DATABASE_URL` | PostgreSQL connection string | Ya |
 
-### Removing Tailwind CSS
+## Lesen
 
-If you prefer not to use Tailwind CSS:
-
-1. Remove the demo pages in `src/routes/demo/`
-2. Replace the Tailwind import in `src/styles.css` with your own styles
-3. Remove `tailwindcss()` from the plugins array in `vite.config.ts`
-4. Uninstall the packages: `npm install @tailwindcss/vite tailwindcss -D`
-
-
-## Setting up Clerk
-
-- Set the `VITE_CLERK_PUBLISHABLE_KEY` in your `.env.local`.
-
-
-
-## Routing
-
-This project uses [TanStack Router](https://tanstack.com/router) with file-based routing. Routes are managed as files in `src/routes`.
-
-### Adding A Route
-
-To add a new route to your application just add a new file in the `./src/routes` directory.
-
-TanStack will automatically generate the content of the route file for you.
-
-Now that you have two routes you can use a `Link` component to navigate between them.
-
-### Adding Links
-
-To use SPA (Single Page Application) navigation you will need to import the `Link` component from `@tanstack/react-router`.
-
-```tsx
-import { Link } from "@tanstack/react-router";
-```
-
-Then anywhere in your JSX you can use it like so:
-
-```tsx
-<Link to="/about">About</Link>
-```
-
-This will create a link that will navigate to the `/about` route.
-
-More information on the `Link` component can be found in the [Link documentation](https://tanstack.com/router/v1/docs/framework/react/api/router/linkComponent).
-
-### Using A Layout
-
-In the File Based Routing setup the layout is located in `src/routes/__root.tsx`. Anything you add to the root route will appear in all the routes. The route content will appear in the JSX where you render `{children}` in the `shellComponent`.
-
-Here is an example layout that includes a header:
-
-```tsx
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
-
-export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      { charSet: 'utf-8' },
-      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'My App' },
-    ],
-  }),
-  shellComponent: ({ children }) => (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        <header>
-          <nav>
-            <Link to="/">Home</Link>
-            <Link to="/about">About</Link>
-          </nav>
-        </header>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  ),
-})
-```
-
-More information on layouts can be found in the [Layouts documentation](https://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts#layouts).
-
-## Server Functions
-
-TanStack Start provides server functions that allow you to write server-side code that seamlessly integrates with your client components.
-
-```tsx
-import { createServerFn } from '@tanstack/react-start'
-
-const getServerTime = createServerFn({
-  method: 'GET',
-}).handler(async () => {
-  return new Date().toISOString()
-})
-
-// Use in a component
-function MyComponent() {
-  const [time, setTime] = useState('')
-  
-  useEffect(() => {
-    getServerTime().then(setTime)
-  }, [])
-  
-  return <div>Server time: {time}</div>
-}
-```
-
-## API Routes
-
-You can create API routes by using the `server` property in your route definitions:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-import { json } from '@tanstack/react-start'
-
-export const Route = createFileRoute('/api/hello')({
-  server: {
-    handlers: {
-      GET: () => json({ message: 'Hello, World!' }),
-    },
-  },
-})
-```
-
-## Data Fetching
-
-There are multiple ways to fetch data in your application. You can use TanStack Query to fetch data from a server. But you can also use the `loader` functionality built into TanStack Router to load the data for a route before it's rendered.
-
-For example:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-
-export const Route = createFileRoute('/people')({
-  loader: async () => {
-    const response = await fetch('https://swapi.dev/api/people')
-    return response.json()
-  },
-  component: PeopleComponent,
-})
-
-function PeopleComponent() {
-  const data = Route.useLoaderData()
-  return (
-    <ul>
-      {data.results.map((person) => (
-        <li key={person.name}>{person.name}</li>
-      ))}
-    </ul>
-  )
-}
-```
-
-Loaders simplify your data fetching logic dramatically. Check out more information in the [Loader documentation](https://tanstack.com/router/latest/docs/framework/react/guide/data-loading#loader-parameters).
-
-# Demo files
-
-Files prefixed with `demo` can be safely deleted. They are there to provide a starting point for you to play around with the features you've installed.
-
-# Learn More
-
-You can learn more about all of the offerings from TanStack in the [TanStack documentation](https://tanstack.com).
-
-For TanStack Start specific documentation, visit [TanStack Start](https://tanstack.com/start).
+MIT
